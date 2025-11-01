@@ -22,6 +22,7 @@ namespace TEST
         private int difficultyLevel = 1;
         private HashSet<int> caughtStars = new HashSet<int>();
         private bool gameRunning = false;
+        private Font starFont;
 
         public Form1()
         {
@@ -36,6 +37,8 @@ namespace TEST
             this.Size = new Size(800, 600);
             this.DoubleBuffered = true;
             this.BackColor = Color.SkyBlue;
+
+            starFont = new Font("Arial", 12, FontStyle.Bold);
 
             gameTimer = new Timer();
             gameTimer.Interval = 20;
@@ -135,7 +138,6 @@ namespace TEST
             // Vẽ sao đỏ (Draw red stars)
             using (SolidBrush starBrush = new SolidBrush(Color.Red))
             {
-                Font starFont = new Font("Arial", 12, FontStyle.Bold);
                 string stars = new string('★', ball.Stars);
                 SizeF textSize = g.MeasureString(stars, starFont);
                 g.DrawString(stars, starFont, starBrush, ball.X - textSize.Width / 2, ball.Y - textSize.Height / 2);
@@ -193,11 +195,6 @@ namespace TEST
             {
                 btnStart.Visible = true;
             }
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show("Hello, World!");  
         }
     }
 
