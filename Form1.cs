@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.IO;
 
 namespace TEST
 {
@@ -24,6 +25,10 @@ namespace TEST
         private bool gameRunning = false;
         private Font starFont;
 
+        // Image for dragon ball (load numbered variants from app folder if present)
+        private Image[] dragonBallVariants = new Image[8]; // index1..7
+        private List<int> availableVariants = new List<int>();
+
         public Form1()
         {
             InitializeComponent();
@@ -40,12 +45,45 @@ namespace TEST
 
             starFont = new Font("Arial", 12, FontStyle.Bold);
 
+            // Try to load numbered images named "dragonball1.png".."dragonball7.png" from the application startup folder.
+            for (int i = 1; i <= 7; i++)
+            {
+                string variantPath = Path.Combine(Application.StartupPath, $"dragonball{i}.png");
+                if (File.Exists(variantPath))
+                {
+                    try
+                    {
+                        dragonBallVariants[i] = Image.FromFile(variantPath);
+                        availableVariants.Add(i);
+                    }
+                    catch
+                    {
+                        dragonBallVariants[i] = null;
+                    }
+                }
+            }
+
+            // IMPORTANT: do not draw fallback shapes. If no variants were imported, no dragon balls will spawn.
+
             gameTimer = new Timer();
-            gameTimer.Interval = 20;
+            gameTimer.Interval = 40;
             gameTimer.Tick += GameTimer_Tick;
 
             this.Paint += Form1_Paint;
             this.MouseClick += Form1_MouseClick;
+            this.FormClosed += Form1_FormClosed; // ensure image is disposed
+        }
+
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            for (int i = 1; i <= 7; i++)
+            {
+                if (dragonBallVariants[i] != null)
+                {
+                    dragonBallVariants[i].Dispose();
+                    dragonBallVariants[i] = null;
+                }
+            }
         }
 
         // Bắt đầu trò chơi (Start game)
@@ -73,12 +111,13 @@ namespace TEST
         // Vòng lặp trò chơi (Game loop)
         private void GameTimer_Tick(object sender, EventArgs e)
         {
-            // Tạo ngọc rồng mới (Create new dragon ball)
-            if (random.Next(0, 100) < 3)
+            // Only spawn if user imported at least one numbered PNG
+            if (availableVariants.Count > 0 && random.Next(0, 100) < 3)
             {
                 int stars = random.Next(1, 8); // 1-7 sao (stars)
                 int x = random.Next(50, this.ClientSize.Width - 50);
-                dragonBalls.Add(new DragonBall(x, 0, stars));
+                int variantIndex = availableVariants[random.Next(availableVariants.Count)];
+                dragonBalls.Add(new DragonBall(x, 0, stars, variantIndex));
             }
 
             // Di chuyển ngọc rồng (Move dragon balls)
@@ -118,30 +157,22 @@ namespace TEST
             }
         }
 
-        // Vẽ một ngọc rồng (Draw one dragon ball)
+        // Vẽ một ngọc rồng (Draw one dragon ball) - only draw imported PNGs, no overlay
         private void DrawDragonBall(Graphics g, DragonBall ball)
         {
             int size = 40;
 
-            // Vẽ hình tròn cam (Draw orange circle)
-            using (SolidBrush brush = new SolidBrush(Color.Orange))
+            Image imgToDraw = null;
+            if (ball.Variant >= 1 && ball.Variant <= 7)
             {
-                g.FillEllipse(brush, ball.X - size / 2, ball.Y - size / 2, size, size);
+                imgToDraw = dragonBallVariants[ball.Variant];
             }
 
-            // Viền đen (Black border)
-            using (Pen pen = new Pen(Color.Black, 2))
-            {
-                g.DrawEllipse(pen, ball.X - size / 2, ball.Y - size / 2, size, size);
-            }
+            // If the image for this variant isn't available, skip drawing this ball
+            if (imgToDraw == null) return;
 
-            // Vẽ sao đỏ (Draw red stars)
-            using (SolidBrush starBrush = new SolidBrush(Color.Red))
-            {
-                string stars = new string('★', ball.Stars);
-                SizeF textSize = g.MeasureString(stars, starFont);
-                g.DrawString(stars, starFont, starBrush, ball.X - textSize.Width / 2, ball.Y - textSize.Height / 2);
-            }
+            Rectangle dest = new Rectangle(ball.X - size / 2, ball.Y - size / 2, size, size);
+            g.DrawImage(imgToDraw, dest);
         }
 
         // Xử lý nhấp chuột (Handle mouse click)
@@ -204,12 +235,22 @@ namespace TEST
         public int X { get; set; }
         public int Y { get; set; }
         public int Stars { get; set; }
+        public int Variant { get; set; } //1..7
 
         public DragonBall(int x, int y, int stars)
         {
             X = x;
             Y = y;
             Stars = stars;
+            Variant = 1;
+        }
+
+        public DragonBall(int x, int y, int stars, int variant)
+        {
+            X = x;
+            Y = y;
+            Stars = stars;
+            Variant = variant;
         }
     }
 }
