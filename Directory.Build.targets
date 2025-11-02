@@ -1,0 +1,8 @@
+<Project>
+ <!-- Ensure any assets placed in Assets\DragonBalls are copied to the output folder on build -->
+ <ItemGroup>
+ <Content Include="Assets\DragonBalls\**\*.*">
+ <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+ </Content>
+ </ItemGroup>
+</Project>
