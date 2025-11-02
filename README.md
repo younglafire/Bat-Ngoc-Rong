@@ -44,6 +44,8 @@ msbuild TEST.sln /p:Configuration=Release
 # Chạy file exe
 bin\Release\TEST.exe
 ```
+# Import file
+1. Di chuyển file Assets và bên trong bin/Debug khi clone về để Ngọc Rồng hiển thị chính xác
 
 ## Tính năng (Features)
 
