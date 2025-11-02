@@ -45,25 +45,56 @@ namespace TEST
 
             starFont = new Font("Arial", 12, FontStyle.Bold);
 
-            // Try to load numbered images named "dragonball1.png".."dragonball7.png" from the application startup folder.
-            for (int i = 1; i <= 7; i++)
+            // Search possible locations for assets so loading is robust during development.
+            var searchPaths = new List<string>();
+            // preferred: <exe>/Assets/DragonBalls
+            searchPaths.Add(Path.Combine(Application.StartupPath, "Assets", "DragonBalls"));
+            // also check exe folder itself (useful if user copied files manually to bin\Debug)
+            searchPaths.Add(Application.StartupPath);
+            // also check project root (when running inside VS, current dir may be project folder)
+            try
             {
-                string variantPath = Path.Combine(Application.StartupPath, $"dragonball{i}.png");
-                if (File.Exists(variantPath))
+                var projectRoot = Path.GetFullPath(Path.Combine(Application.StartupPath, "..", ".."));
+                searchPaths.Add(projectRoot);
+            }
+            catch { }
+
+            availableVariants.Clear();
+
+            foreach (var folder in searchPaths.Distinct())
+            {
+                if (string.IsNullOrEmpty(folder)) continue;
+                if (!Directory.Exists(folder)) continue;
+
+                for (int i = 1; i <= 7; i++)
                 {
-                    try
+                    if (availableVariants.Contains(i)) continue; // already loaded
+                    string variantPath = Path.Combine(folder, $"dragonball{i}.png");
+                    if (File.Exists(variantPath))
                     {
-                        dragonBallVariants[i] = Image.FromFile(variantPath);
-                        availableVariants.Add(i);
-                    }
-                    catch
-                    {
-                        dragonBallVariants[i] = null;
+                        try
+                        {
+                            dragonBallVariants[i] = Image.FromFile(variantPath);
+                            availableVariants.Add(i);
+                        }
+                        catch
+                        {
+                            dragonBallVariants[i] = null;
+                        }
                     }
                 }
+
+                // If we found all variants, stop searching
+                if (availableVariants.Count >= 7) break;
             }
 
-            // IMPORTANT: do not draw fallback shapes. If no variants were imported, no dragon balls will spawn.
+            // Update title so you can see how many assets were loaded at runtime.
+            this.Text = this.Text + $" (Assets: {availableVariants.Count})";
+            if (availableVariants.Count == 0)
+            {
+                // keep Start enabled (mentor can build), but show a warning once.
+                MessageBox.Show("No dragon ball images were found. Place dragonball1.png .. dragonball7.png in Assets\\DragonBalls or bin\\Debug and rebuild.", "Assets not found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
 
             gameTimer = new Timer();
             gameTimer.Interval = 40;
@@ -83,6 +114,11 @@ namespace TEST
                     dragonBallVariants[i].Dispose();
                     dragonBallVariants[i] = null;
                 }
+            }
+            if (starFont != null)
+            {
+                starFont.Dispose();
+                starFont = null;
             }
         }
 
